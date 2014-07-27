@@ -1,0 +1,2 @@
+mongoengine
+git+http://github.com/ng-bottle-libraries/models#egg=namespace_models
