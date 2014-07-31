@@ -15,7 +15,7 @@ class OAuth2Error(Exception):
     Usage:
         raise OAuth2Error(<error>, ...)
         OR
-        OAuth2Error.<error>   # Provides dictionary
+        OAuth2Error.<error>.copy()   # Serves dictionary
     """
 
     unauthorized_client = dict(error_description="The client is not authorized to request "
@@ -64,17 +64,17 @@ class OAuth2Error(Exception):
     expired_token = dict(error_description="Access Token has expired. To continue, please generate a new one.",
                          status_code=419)
 
-    def __init__(self, error, error_description=None, error_uri=None, state=None, status_code=None):
+    def __init__(self, error_name, error_description=None, error_uri=None, state=None, status_code=None):
         """ Supports OAuth2Error( ... ) syntax; use this one for `raise`ing errors """
 
         errors = [x for x in dir(self) if x not in ('message', 'args') and '__' not in x]
-        if not error in errors:
-            raise KeyError("Error type '{0}' not supported, use one of: {1}".format(error, errors))
+        if error_name not in errors:
+            raise KeyError("Error type '{0}' not supported, use one of: {1}".format(error_name, errors))
 
-        error_description = error_description or getattr(self, error, error_description)['error_description']
+        error_description = error_description or getattr(self, error_name, error_description)['error_description']
 
-        self.message = self.response = {'error': error, 'error_description': error_description,
-                                        'status_code': getattr(self, error, status_code)['status_code']}
+        self.message = self.response = {'error': error_name, 'error_description': error_description,
+                                        'status_code': getattr(self, error_name, status_code)['status_code']}
 
         if error_uri:
             dict(self.message).update({'error_uri': error_uri})
@@ -94,7 +94,7 @@ def error(resp, err, error_description=None):
     """ Helper to promote DRY in bottle apps, and others which support resp.status syntax """
     error_resp = OAuth2Error.__dict__[err].copy()
     resp.status = error_resp.pop('status_code')
-    return {'error': err, 'error_description': error_description or error_resp}
+    return (lambda ed: {'error': err, ed: error_description or error_resp[ed]})('error_description')
 
 
 if __name__ == '__main__':
